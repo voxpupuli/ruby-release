@@ -2,14 +2,6 @@
 name: 'Release Ruby gems'
 description: "Release Ruby gems with minimal tooling"
 inputs:
-  repository:
-    description: 'Repository to checkout'
-    required: false
-    type: string
-  ref:
-    description: 'Git ref to checkout'
-    required: false
-    type: string
   ruby_version:
     description: 'Ruby version used to build'
     default: 'ruby'
@@ -18,9 +10,6 @@ runs:
   using: "composite"
   steps:
     - uses: actions/checkout@v4
-      with:
-        repository: ${{ inputs.repository }}
-        ref: ${{ inputs.ref }}
     - name: 'Install Ruby ${{ inputs.ruby_version }}'
       uses: ruby/setup-ruby@v1
       with:
