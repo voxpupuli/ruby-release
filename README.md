@@ -31,5 +31,5 @@ jobs:
       id-token: write
 
     steps:
-      - uses: ekohl/ruby-release@v0
+      - uses: voxpupuli/ruby-release@v0
 ```
