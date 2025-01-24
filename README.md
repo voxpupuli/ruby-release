@@ -25,7 +25,7 @@ jobs:
     # Optional but recommended to use a specific environment
     environment: release
     # Prevent releases from forked repositories
-    if: github.repository_owner == "MyOwner"
+    if: github.repository_owner == 'MyOwner'
 
     permissions:
       id-token: write
