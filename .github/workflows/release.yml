@@ -10,13 +10,11 @@ permissions: {}
 
 jobs:
   create-github-release:
-    needs: build-release
     name: Create GitHub release
     runs-on: ubuntu-24.04
     permissions:
       contents: write # create release
     steps:
-      - name: Download gem from GitHub cache
       - name: Create Release
         shell: bash
         env:
