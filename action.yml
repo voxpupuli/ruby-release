@@ -17,7 +17,7 @@ runs:
     - name: Build gem
       shell: bash
       run: gem build *.gemspec
-    - uses: rubygems/configure-rubygems-credentials@v1.0.0
+    - uses: rubygems/configure-rubygems-credentials@v2.0.0
     - name: Publish gem to rubygems.org
       shell: bash
       run: gem push *.gem
