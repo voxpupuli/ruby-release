@@ -1,0 +1,126 @@
+---
+name: Reusable Gem Release
+
+on:
+  workflow_call:
+    inputs:
+      allowed_owner:
+        description: Repository owner allowed to publish
+        required: true
+        type: string
+      environment:
+        description: GitHub environment for RubyGems trusted publishing
+        required: false
+        default: release
+        type: string
+      ruby_version:
+        description: Ruby version used to build and verify the gem
+        required: false
+        default: ruby
+        type: string
+      publish_github_packages:
+        description: Publish the built gem to GitHub Packages
+        required: false
+        default: true
+        type: boolean
+
+permissions: {}
+
+jobs:
+  build-release:
+    name: Build the gem
+    if: github.repository_owner == inputs.allowed_owner
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ inputs.ruby_version }}
+      - name: Build gem
+        shell: bash
+        run: gem build --verbose *.gemspec
+      - name: Upload gem artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gem-artifact
+          path: '*.gem'
+          retention-days: 1
+          compression-level: 0
+
+  create-github-release:
+    name: Create GitHub release
+    needs: build-release
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download gem artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gem-artifact
+      - name: Create release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create --repo ${{ github.repository }} ${{ github.ref_name }} --generate-notes *.gem
+
+  release-to-github-packages:
+    name: Release gem to GitHub Packages
+    if: inputs.publish_github_packages
+    needs: build-release
+    runs-on: ubuntu-24.04
+    permissions:
+      packages: write
+    steps:
+      - name: Download gem artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gem-artifact
+      - name: Publish gem to GitHub Packages
+        shell: bash
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.GITHUB_TOKEN }}
+        run: gem push --host https://rubygems.pkg.github.com/${{ github.repository_owner }} *.gem
+
+  release-to-rubygems:
+    name: Release gem to rubygems.org
+    needs: build-release
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+    steps:
+      - name: Download gem artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gem-artifact
+      - uses: rubygems/configure-rubygems-credentials@v1.0.0
+      - name: Publish gem to rubygems.org
+        shell: bash
+        run: gem push *.gem
+
+  release-verification:
+    name: Verify RubyGems propagation
+    needs:
+      - create-github-release
+      - release-to-rubygems
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Download gem artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gem-artifact
+      - name: Install Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ inputs.ruby_version }}
+      - name: Wait for release to propagate
+        shell: bash
+        run: |
+          gem install rubygems-await
+          gem await *.gem
