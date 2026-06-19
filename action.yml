@@ -9,7 +9,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: 'Install Ruby ${{ inputs.ruby_version }}'
       uses: ruby/setup-ruby@v1
       with:
